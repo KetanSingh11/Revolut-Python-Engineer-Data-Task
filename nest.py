@@ -92,16 +92,23 @@ def filler(frame, table_data):
                     print("unreach")
                     break
                 elif isinstance(_val, list):
-                    key_pos = COLUMN_MAP[_val[0]]
-                    key_data = table_data[row_counter][key_pos]
-                    print("key=", _val[0], " key_pos=", key_pos, "data=", key_data)
-                    data = []
-                    data.append(key_data)
-                    return data
+                    data[key_data] = filler(_val, table_data)  # filling empty dict
+                    # key_pos_ = COLUMN_MAP[_val[0]]
+                    # key_data_ = table_data[row_counter][key_pos_]
+                    # print("key=", _val[0], " key_pos=", key_pos_, "data=", key_data_)
+                    # data = []
+                    # data.append(key_data_)
+                    # return data
 
         elif isinstance(frame, list):
             print("......inside here")
-            return
+            _val = frame[0]
+            key_pos_ = COLUMN_MAP[_val]
+            key_data_ = table_data[row_counter][key_pos_]
+            print("key=", _val, " key_pos=", key_pos_, "data=", key_data_)
+            data = []
+            data.append(key_data_)
+            return data
 
         row_counter += 1
     print("\n", data)
