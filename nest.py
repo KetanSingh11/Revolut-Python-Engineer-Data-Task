@@ -40,6 +40,7 @@ def column_mapper(header=["S No.", "country", "city", "currency"]):
 
 
 def magic(level=1, *args):
+    """creates a wire-frame"""
     frame = {}
     print("\nlevel=", level, "  args= ", args[0])
     if len(args[0]) < 1:
@@ -54,8 +55,10 @@ def magic(level=1, *args):
                 frame[_t] = d
             break
     elif len(args[0]) == 1:
-        # leaf node reached, attach list
-        frame[args[0][0]] = []
+        print("leaf node reached, attach as a list")
+        # frame[args[0][0]] = []
+        frame = []
+        frame.append(args[0][0])
 
     print("frame=", frame)
     # list_args = [x for x in args[0]]
@@ -83,16 +86,21 @@ def filler(frame, table_data):
                 key_pos = COLUMN_MAP[key]
                 key_data = table_data[row_counter][key_pos]
                 print("key=", key, " key_pos=", key_pos, "data=", key_data)
-                _val = frame[key]     #trimmed frame
+                _val = frame[key]     #new trimmed frame
                 if isinstance(_val, dict):
                     data[key_data] = filler(_val, table_data)   #filling empty dict
                     print("unreach")
                     break
                 elif isinstance(_val, list):
+                    key_pos = COLUMN_MAP[_val[0]]
+                    key_data = table_data[row_counter][key_pos]
+                    print("key=", _val[0], " key_pos=", key_pos, "data=", key_data)
                     data = []
                     data.append(key_data)
+                    return data
 
         elif isinstance(frame, list):
+            print("......inside here")
             return
 
         row_counter += 1
