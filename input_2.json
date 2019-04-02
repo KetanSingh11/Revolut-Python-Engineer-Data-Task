@@ -1,0 +1,14 @@
+[
+  {
+    "country": "US",
+    "city": "Boston",
+    "currency": "USD",
+    "amount": 100
+  },
+  {
+    "country": "UK",
+    "city": "Boston",
+    "currency": "GBP",
+    "amount": 122.2
+  }
+]
