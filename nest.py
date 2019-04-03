@@ -22,17 +22,17 @@ def parse(data):
         row.append(item['country'])
         row.append(item['city'])
         row.append(item['currency'])
-        # row.append(item['amount'])
+        row.append(item['amount'])
         table.append(row)
 
 
-    # print(tabulate(table, headers=["S No.", "country", "city", "currency", "amount"]))
-    print(tabulate(table, headers=["S No.", "country", "city", "currency"]))
+    print(tabulate(table, headers=["S No.", "country", "city", "currency", "amount"]))
+    # print(tabulate(table, headers=["S No.", "country", "city", "currency"]))
 
     print(table)
     return table
 
-def column_mapper(header=["S No.", "country", "city", "currency"]):
+def column_mapper(header=["S No.", "country", "city", "currency", "amount"]):
     global COLUMN_MAP
     for i, item in enumerate(header):
         COLUMN_MAP[item] = i
@@ -77,12 +77,13 @@ def filler(frame, table_data):
     global COLUMN_MAP
     print(">frame=", frame)
     data = {}
+    l_data = []
 
     row_counter = 0
     while row_counter < len(table_data):
         print("row_counter=", row_counter)
         if isinstance(frame, dict):
-            for key in frame.keys():
+            for key in frame.keys():        #theres only one key
                 key_pos = COLUMN_MAP[key]
                 key_data = table_data[row_counter][key_pos]
                 print("key=", key, " key_pos=", key_pos, "data=", key_data)
@@ -100,17 +101,20 @@ def filler(frame, table_data):
                     # data.append(key_data_)
                     # return data
 
-        elif isinstance(frame, list):
-            print("......inside here")
+        elif isinstance(frame, list):   #last node leaf
+            print("......compute last node leaf")
             _val = frame[0]
             key_pos_ = COLUMN_MAP[_val]
             key_data_ = table_data[row_counter][key_pos_]
             print("key=", _val, " key_pos=", key_pos_, "data=", key_data_)
-            data = []
-            data.append(key_data_)
-            return data
+            l_data.append(key_data_)
+            # return data
 
         row_counter += 1
+
+    if l_data:
+        print("\n", l_data)
+        return l_data
     print("\n", data)
     return data
 
@@ -125,7 +129,7 @@ if __name__ == "__main__":
     column_mapper()
 
     # frame = magic(1, ["country", "city", "country", "currency"])
-    frame = magic(1, ["city", "country", "currency"])
+    frame = magic(1, ["city", "country"])
     print("> final frame = ", frame)
 
     print("\n>inside filler...")
