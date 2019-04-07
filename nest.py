@@ -1,16 +1,41 @@
 import json
 import argparse
+import logging
+import sys
+import os
 from tabulate import tabulate
+
+# Creating an object
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+# Setting the threshold of logger to DEBUG
+logger = logging.getLogger(__name__)
+
 
 COLUMN_MAP = {}
 
 
-def main(filename):
+def read_json_file(filename):
+
+    if not os.path.exists(filename):
+        logger.error("File not Found!")
+        sys.exit(1)
+    if not os.path.isfile(filename):
+        logger.error("Not a file! Please specify a valid filename with extension.")
+        sys.exit(1)
+
     with open(filename, 'r') as file:
+        logger.info("Reading file: '%s'", os.path.abspath(filename))
         _str = file.read()
 
-    data = json.loads(_str)
-    # print(data)
+    data = None
+    try:
+        data = json.loads(_str)
+        # print(data)
+    except ValueError as e:
+        logger.error("Error parsing JSON file. Invalid JSON file: %s", filename)
+        sys.exit(1)
+
     return parse(data)
 
 def parse(data):
@@ -26,44 +51,44 @@ def parse(data):
         table.append(row)
 
 
-    print(tabulate(table, headers=["S No.", "country", "city", "currency", "amount"]))
+    logger.info("\n%s", tabulate(table, headers=["S No.", "country", "city", "currency", "amount"]))
     # print(tabulate(table, headers=["S No.", "country", "city", "currency"]))
 
-    print(table)
+    logger.debug(table)
     return table
 
 def column_mapper(header=["S No.", "country", "city", "currency", "amount"]):
     global COLUMN_MAP
     for i, item in enumerate(header):
         COLUMN_MAP[item] = i
-    print("COLUMN_MAP=", COLUMN_MAP)
+    logger.debug("COLUMN_MAP=%s", COLUMN_MAP)
 
 
-def magic(level=1, *args):
-    """creates a wire-frame"""
+def create_wireframe(level=1, *args):
+    """
+    creates a wire-frame json(dict) using the format of *args
+    """
+
     frame = {}
-    print("\nlevel=", level, "  args= ", args[0])
+    logger.debug("\nlevel=%s args=%s", level, args[0])
     if len(args[0]) < 1:
-        print("returning...[amount]")
+        logger.debug("returning...[amount k:v]")
         return ['amount k:v']
 
-    #above leaf node still
+    # above leaf node still
     if len(args[0]) >= 1:
         for _argKey in args[0]:
             if not _argKey in frame.keys():
-                d = magic(level + 1, tuple(_trimArgs(args)[1:]))
+                d = create_wireframe(level + 1, tuple(_trimArgs(args)[1:]))
                 frame[_argKey] = d
             break
     elif len(args[0]) == 1:
-        print("leaf node reached, attach as a list")
-        # frame[args[0][0]] = []
+        logger.debug("leaf node reached, attach as a list")
         frame = []
         frame.append(args[0][0])
 
-    # list_args = [x for x in args[0]]
-    # magic("bb", tuple(list_args[1:]))
 
-    print("returning...frame=", frame)
+    logger.debug("returning...frame=%s", frame)
     return frame
 
 
@@ -77,18 +102,18 @@ def data_preparer(frame, table_data):
     global master_json
     for row in table_data:
         d = filler(frame, row)
-        print("\nd=", d, "\n")
+        logger.debug("\nd=%s", d)
 
         if len(master_json.keys()) == 0:
             master_json = d
         elif len(d.keys()) == 1:  #has to be one only
             master_json_cpy = master_json
             x = data_presser(d, master_json_cpy)
-            print("x=", x)
+            # print("x=", x)
             master_json = x
         else:
-            print("ERROR!!!!!")
-    print("final master_json=", master_json)
+            logger.error("ERROR!!!!!")
+    logger.info("final master_json=%s", master_json)
 
 def data_presser(d, master_json_cpy):
     # global master_json      #filled up
@@ -111,7 +136,6 @@ def data_presser(d, master_json_cpy):
 
     return master_json_cpy
 
-
     # if list(d.keys())[0] in master_json.keys():
     #     print("pressed master_data=")
     #     master_json[list(d.keys())[0]][list(d.keys())[0]] = d[list(d.keys())[0]][list(d.keys())[0]]
@@ -132,7 +156,7 @@ def filler(reduced_frame, table_row):
         for key in reduced_frame.keys():        #there has to be only one key
             key_pos = COLUMN_MAP[key]
             key_data = table_row[key_pos]
-            # print("key=", key, " key_pos=", key_pos, "data=", key_data)
+            logger.debug("key=%s, key_pos=%s, data=%s", key, key_pos, key_data)
             _val = reduced_frame[key]           #new trimmed frame
             data[key_data] = filler(_val, table_row)
 
@@ -140,7 +164,7 @@ def filler(reduced_frame, table_row):
         # print("......compute last node leaf")
         key_pos_ = COLUMN_MAP['amount']
         key_data_ = table_row[key_pos_]
-        # print("key=", 'amount', " key_pos=", key_pos_, "data=", key_data_)
+        logger.debug("key='amount', key_pos=%s, data=%s", key_pos_, key_data_)
         leaf_data = []
         data['amount'] = key_data_
         leaf_data.append(data)
@@ -152,14 +176,31 @@ def filler(reduced_frame, table_row):
 
 
 if __name__ == "__main__":
-    filename = "input.json"
-    table_data = main(filename)
+    parser = argparse.ArgumentParser(description="This is nested dictionary challenge program.")
+    parser.add_argument("filename", help="filename containing a valid json", type=str)
+    parser.add_argument("nesting_level_1", help="Specify atleast one nesting level", type=str, nargs='+')
+    parser.add_argument("-v", "--verbose", help="increase verbosity", action="store_true")
+    args = parser.parse_args()
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+        logger.info("-verbosity turned on")
+
+    logger.info(args.nesting_level_1)
+
+    logger.info("Starting...")
+
+    filename = args.filename        #input from cmd line
+    table_data = read_json_file(filename)
     # print(table_data)
+
+    nesting_level_list = ["country", "city", "country", "currency"]
+
     column_mapper()
 
-    # frame = magic(1, ["country", "city", "country", "currency"])
-    frame = magic(1, ["currency", "country", "city"])
-    print("> final frame = ", frame)
+    frame = create_wireframe(1, nesting_level_list)
+    # frame = magic(1, ["currency", "country", "city"])
+    logger.info(">final frame = %s", frame)
 
-    print("\n>inside filler...")
+    logger.info("Now filling data into frame...")
     data_preparer(frame, table_data)
