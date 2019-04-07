@@ -13,10 +13,17 @@ logger = logging.getLogger(__name__)
 
 
 COLUMN_MAP = {}
+FILE_HEADER = []        # stored keys from raw json file
+SN_HEADER = []          # stores FILE_HEADER with extra key "S No."
+master_json = {}        # final output json
 
 
 def read_json_file(filename):
-
+    """
+    Reads a file containing JSON data
+    :param filename: string
+    :return: dict in json format
+    """
     if not os.path.exists(filename):
         logger.error("File not Found!")
         sys.exit(1)
@@ -38,35 +45,66 @@ def read_json_file(filename):
 
     return parse(data)
 
+
 def parse(data):
+    """
+    Reads data in dict format and creates a table for representation
+    :param data:
+    :return:
+    """
+    global FILE_HEADER
+    compute_headers(data)
+
     table = []
-    # table.append(["S No.", "country", "city", "currency", "amount"])
+    # table.append(["S No.", "country", "city", "currency", "amount"])      # adding header as 1st row
     for i, item in enumerate(data):
         row = []
         row.append(i+1)
-        row.append(item['country'])
-        row.append(item['city'])
-        row.append(item['currency'])
-        row.append(item['amount'])
+        for head in FILE_HEADER:
+            row.append(item[head])
+        # row.append(item['country'])
+        # row.append(item['city'])
+        # row.append(item['currency'])
+        # row.append(item['amount'])
         table.append(row)
 
-
-    logger.info("\n%s", tabulate(table, headers=["S No.", "country", "city", "currency", "amount"]))
+    logger.info("\n%s", tabulate(table, headers=SN_HEADER))
+    # logger.info("\n%s", tabulate(table, headers=["S No.", "country", "city", "currency", "amount"]))
     # print(tabulate(table, headers=["S No.", "country", "city", "currency"]))
 
     logger.debug(table)
     return table
 
-def column_mapper(header=None):
+
+def compute_headers(data):
+    global FILE_HEADER
+    if isinstance(data, list):
+        FILE_HEADER = list(data[0].keys())
+        logger.debug("FILE_HEADER=%s", FILE_HEADER)
+        update_sn_header()
+        return FILE_HEADER
+    else:
+        logger.error("Error parsing JSON HEADERS. Invalid JSON file: %s", filename, exc_info=True)
+        sys.exit(1)
+
+
+def update_sn_header():
+    global FILE_HEADER, SN_HEADER
+    SN_HEADER = FILE_HEADER.copy()
+    SN_HEADER.insert(0, "S No.")  # inject "S No."
+    logger.debug("SN_HEADER=%s", SN_HEADER)
+
+
+def column_mapper(out_header=None):
     global COLUMN_MAP
     # header = ["S No.", "country", "city", "currency", "amount"]
-    logger.info("header=%s", header)
-    if not header:
+    logger.info("out_header=%s", out_header)
+    if not out_header:
         logger.error("Unable to create COLUMN_MAP!")
         sys.exit(1)
 
     counter = 0
-    for item in header:
+    for item in out_header:
         if item not in COLUMN_MAP.keys():
             COLUMN_MAP[item] = counter
             counter += 1
@@ -105,7 +143,6 @@ def _trimArgs(arg):
     list_args = [x for x in arg[0]]
     return list_args
 
-master_json = {}
 
 def data_preparer(frame, table_data):
     global master_json
@@ -123,6 +160,8 @@ def data_preparer(frame, table_data):
         else:
             logger.error("ERROR!!!!!")
     logger.info("final master_json=%s", master_json)
+    return master_json
+
 
 def data_presser(d, master_json_cpy):
     # global master_json      #filled up
@@ -144,15 +183,6 @@ def data_presser(d, master_json_cpy):
         return master_json_cpy.append(d)
 
     return master_json_cpy
-
-    # if list(d.keys())[0] in master_json.keys():
-    #     print("pressed master_data=")
-    #     master_json[list(d.keys())[0]][list(d.keys())[0]] = d[list(d.keys())[0]][list(d.keys())[0]]
-    #     print(master_json)
-    # else:
-    #     print("--new key in new row")
-    #     d_only_key = list(d.keys())[0]
-    #     master_json[d_only_key] = d[d_only_key]
 
 
 def filler(reduced_frame, table_row):
@@ -182,6 +212,32 @@ def filler(reduced_frame, table_row):
     return data
 
 
+def main(args):
+    logger.info("Starting...")
+
+    # Read JSON file
+    filename = args.filename  # input from cmd line
+    table_data = read_json_file(filename)
+    print("table_data=", table_data)
+
+    # nesting_level_list = ["country", "city", "country", "currency"]     #input from cmd line
+    nesting_level_list = args.nesting_level_1
+    # s_no = ["S No."]
+    # s_no.extend(nesting_level_list)
+    nesting_level_list.insert(0, "S No.")
+    # add "amount" as mandatory leaf dict
+    if "amount" not in nesting_level_list:
+        nesting_level_list.extend(["amount"])
+
+    logger.debug("FINAL nesting_level_list=%s", nesting_level_list)
+    column_mapper(SN_HEADER)
+
+    frame = create_wireframe(1, nesting_level_list[1:])  # don't send "S No." for creting wireframe
+    # frame = magic(1, ["currency", "country", "city"])
+    logger.info(">final frame = %s", frame)
+
+    logger.info("Now filling data into frame...")
+    output = data_preparer(frame, table_data)
 
 
 if __name__ == "__main__":
@@ -197,24 +253,30 @@ if __name__ == "__main__":
 
     logger.info(args.nesting_level_1)
 
-    logger.info("Starting...")
+    main(args)
 
-    filename = args.filename        #input from cmd line
-    table_data = read_json_file(filename)
-    print("table_data=", table_data)
-
-    nesting_level_list = ["country", "city", "country", "currency"]     #input from cmd line
+    # logger.info("Starting...")
+    #
+    # # Read JSON file
+    # filename = args.filename        #input from cmd line
+    # table_data = read_json_file(filename)
+    # print("table_data=", table_data)
+    #
+    # # nesting_level_list = ["country", "city", "country", "currency"]     #input from cmd line
     # nesting_level_list = args.nesting_level_1
-    s_no = ["S No."]
-    s_no.extend(nesting_level_list)
-    # add "amount" as mandatory leaf dict
-    if "amount" not in s_no:
-        s_no.extend(["amount"])
-    column_mapper(s_no)
-
-    frame = create_wireframe(1, nesting_level_list)
-    # frame = magic(1, ["currency", "country", "city"])
-    logger.info(">final frame = %s", frame)
-
-    logger.info("Now filling data into frame...")
-    data_preparer(frame, table_data)
+    # # s_no = ["S No."]
+    # # s_no.extend(nesting_level_list)
+    # nesting_level_list.insert(0, "S No.")
+    # # add "amount" as mandatory leaf dict
+    # if "amount" not in nesting_level_list:
+    #     nesting_level_list.extend(["amount"])
+    #
+    # logger.debug("FINAL nesting_level_list=%s", nesting_level_list)
+    # column_mapper(SN_HEADER)
+    #
+    # frame = create_wireframe(1, nesting_level_list[1:])     # don't send "S No." for creting wireframe
+    # # frame = magic(1, ["currency", "country", "city"])
+    # logger.info(">final frame = %s", frame)
+    #
+    # logger.info("Now filling data into frame...")
+    # output = data_preparer(frame, table_data)

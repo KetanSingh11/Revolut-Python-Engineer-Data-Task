@@ -1,11 +1,5 @@
 [
   {
-    "country": "FR",
-    "city": "Lyon",
-    "currency": "EUR",
-    "amount": 11.4
-  },
-  {
     "country": "ES",
     "city": "Madrid",
     "currency": "EUR",
@@ -13,9 +7,14 @@
   },
   {
     "country": "FR",
+    "city": "Lyon",
+    "currency": "EUR",
+    "amount": 11.4
+  },
+  {
+    "country": "FR",
     "city": "Paris",
     "currency": "EUR",
     "amount": 20
   }
-
 ]

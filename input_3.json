@@ -6,16 +6,17 @@
     "amount": 11.4
   },
   {
-    "country": "ES",
-    "city": "Madrid",
-    "currency": "EUR",
-    "amount": 8.9
-  },
-  {
     "country": "FR",
     "city": "Paris",
     "currency": "EUR",
     "amount": 20
+  },
+  {
+    "country": "ES",
+    "city": "Madrid",
+    "currency": "EUR",
+    "amount": 8.9
   }
+
 
 ]
