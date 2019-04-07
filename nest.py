@@ -33,7 +33,7 @@ def read_json_file(filename):
         data = json.loads(_str)
         # print(data)
     except ValueError as e:
-        logger.error("Error parsing JSON file. Invalid JSON file: %s", filename)
+        logger.error("Error parsing JSON file. Invalid JSON file: %s", filename, exc_info=True)
         sys.exit(1)
 
     return parse(data)
@@ -57,11 +57,20 @@ def parse(data):
     logger.debug(table)
     return table
 
-def column_mapper(header=["S No.", "country", "city", "currency", "amount"]):
+def column_mapper(header=None):
     global COLUMN_MAP
-    for i, item in enumerate(header):
-        COLUMN_MAP[item] = i
-    logger.debug("COLUMN_MAP=%s", COLUMN_MAP)
+    # header = ["S No.", "country", "city", "currency", "amount"]
+    logger.info("header=%s", header)
+    if not header:
+        logger.error("Unable to create COLUMN_MAP!")
+        sys.exit(1)
+
+    counter = 0
+    for item in header:
+        if item not in COLUMN_MAP.keys():
+            COLUMN_MAP[item] = counter
+            counter += 1
+    logger.debug("COLUMN_MAP= %s", COLUMN_MAP)
 
 
 def create_wireframe(level=1, *args):
@@ -192,11 +201,16 @@ if __name__ == "__main__":
 
     filename = args.filename        #input from cmd line
     table_data = read_json_file(filename)
-    # print(table_data)
+    print("table_data=", table_data)
 
-    nesting_level_list = ["country", "city", "country", "currency"]
-
-    column_mapper()
+    nesting_level_list = ["country", "city", "country", "currency"]     #input from cmd line
+    # nesting_level_list = args.nesting_level_1
+    s_no = ["S No."]
+    s_no.extend(nesting_level_list)
+    # add "amount" as mandatory leaf dict
+    if "amount" not in s_no:
+        s_no.extend(["amount"])
+    column_mapper(s_no)
 
     frame = create_wireframe(1, nesting_level_list)
     # frame = magic(1, ["currency", "country", "city"])
